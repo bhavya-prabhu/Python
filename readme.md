@@ -27,6 +27,7 @@ This repository contains my solution to both steps. Step 1 is completed in the f
 https://github.com/bhg/supermarket/commit/aeac1b690206dc3267698e056eac9936a0084df2
 
 Step 2 is completed in the following commit:
+https://github.com/bhg/supermarket/commit/0387e95b56c81f67d8eae9c16ff03a39fc8db2ca
 
 -----------------------------------
 
