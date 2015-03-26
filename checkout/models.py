@@ -8,6 +8,7 @@ This module contains the Django models required for the Supermarket project.
 
 """
 
+import math
 from decimal import *
 from django.db import models
 
@@ -20,11 +21,15 @@ class Product(models.Model):
 	Attributes:
 		product_name -- the name of the product
 		price -- the price of the product
+		discount_purchase -- in the case of a discount, the number of items needed to be purchased in order to apply the discount
+		discount_receive -- in the case of a discount, the number of items received if discount_purchase items are bought
 
 	"""
 
 	product_name = models.CharField(max_length = 20, primary_key = True)
 	price = models.DecimalField(max_digits = 10, decimal_places = 2)
+	discount_purchase = models.IntegerField(blank = True, null = True, default = None)
+	discount_receive = models.IntegerField(blank = True, null = True, default = None)
 
 	def __str__(self):
 
@@ -33,8 +38,11 @@ class Product(models.Model):
 		Returns a string representation of this Product object.
 
 		"""
-		return self.product_name + ": " + str(self.price) + "p"
+	 	result = self.product_name + ": " + str(self.price) + "p"
+		if self.discount_purchase and self.discount_receive:
+			result += " Discount: " + str(self.discount_receive) + " for the price of " + str(self.discount_purchase)
 
+		return result
 
 class InvalidPurchaseException(Exception):
 
@@ -84,10 +92,11 @@ class Purchase(models.Model):
 		counts = {}
                 for item in list_of_items:
                         if item in counts:
+				# The item is there already, so increment the counter.
                                 counts[item] += 1
                         else:
                                 try:
-                                        # Test whether the product of that name exists
+                                        # Test whether the product of that name exists.
                                         Product.objects.get(product_name=item)
                                         counts[item] = 1
                                 except:
@@ -104,17 +113,21 @@ class Purchase(models.Model):
 	
 		"""
 	
-		# Avoid decimal precision issues
-
-		getcontext().prec = 2
-
 		if not self.items_list:
                         raise InvalidPurchaseException("List of items may not be empty")
 
 
 		# Split the string representation into a list and count the number of each item in the list.
 		counts = self.count_per_item(map(unicode.strip, self.items_list.split(',')))
-		
+
+		# Apply discounts by iterating through the list and reducing the number of items appropriately.
+		for product in counts:
+			product_object = Product.objects.get(product_name = product)
+			if product_object.discount_purchase and product_object.discount_receive:
+				# Need to cast to a float in order for the ceil() function to work in Python 2. This has been fixed in Python 3.
+				counts[product] = math.ceil(float(counts[product]) / float(product_object.discount_receive)) * product_object.discount_purchase
+
+		# Iterate over the list, multiplying the count of each item by its price and keeping a running total.	
 		total = Decimal('0.0')
 		for item_name in counts:
 			total += Decimal(counts[item_name]) * Decimal(Product.objects.get(product_name=item_name).price)

@@ -22,7 +22,7 @@ class ProductSerializer(serializers.HyperlinkedModelSerializer):
 
 	class Meta:
         	model = Product
-        	fields = ('product_name', 'price')
+        	fields = ('product_name', 'price', 'discount_purchase', 'discount_receive')
 
 
 class PurchaseSerializer(serializers.HyperlinkedModelSerializer):
